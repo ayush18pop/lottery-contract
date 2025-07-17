@@ -64,6 +64,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     /*events*/
     event RaffleEntered(address indexed player);
     event WinnerPicked(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
 
     constructor(
         uint256 enteranceFee,
@@ -134,7 +135,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
                     VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
                 )
             });
-        s_vrfCoordinator.requestRandomWords(request);
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(
@@ -164,5 +166,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function getPlayer(uint256 index) external view returns (address) {
         return s_players[index];
+    }
+
+    function getSubscriptionId() public view returns (uint256) {
+        return i_subscriptionId;
     }
 }

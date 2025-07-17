@@ -5,6 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {DeployRaffle} from "script/DeployRaffle.s.sol";
 import {Raffle} from "src/Raffle.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
+import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract RaffleTest is Test {
     Raffle public raffle;
@@ -29,6 +31,7 @@ contract RaffleTest is Test {
         gasLane = config.gasLane;
         callbackGasLimit = config.callbackGasLimit;
         subscriptionId = config.subscriptionId;
+        subscriptionId = raffle.getSubscriptionId();
 
         vm.deal(PLAYER, STARTING_PLAYER_BALANCE);
     }
@@ -79,5 +82,90 @@ contract RaffleTest is Test {
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
+    }
+
+    /*///////////////////////////////////////////////
+                CHECK UPKEEP TESTS
+    ///////////////////////////////////////////////*/
+
+    function testCheckUpkeepReturnsFalseIfItHasNoBalance() public {
+        //ARRANGE
+        //explanation: we are not sending any ether to the raffle contract
+        //so it has no balance
+        //this is needed because the checkUpkeep function checks if the time has passed
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        //ACT
+        //explanation: we are calling checkUpkeep with an empty calldata
+        //why empty? because we are not using it in this test
+        //why not using it? because we are just testing the balance
+        //why we are testing the balance? because we want to see if it returns false
+        //why we want to see if it returns false? because we want to see if it has no balance
+        //why we want to see if it has no balance? because we want to see if it returns false
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+
+        //ASSERT
+
+        //why are we checking upkeepNeeded if we're testing it for balance checking
+        //so we're making sure that raffle is open while testing the balance
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfRaffleIsNotOpen() public {
+        //arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        //act
+        //this makes sure that the raffle is not open
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        //this will change the raffle state to calculating
+        raffle.performUpkeep("");
+        //assert
+        //this checks if the upkeep is needed
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    modifier raffleEntered() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsEvent()
+        public
+        raffleEntered
+    {
+        //arranged already in the modifier
+
+        //act
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        //0th topic is reserved for the event signature
+        //1st topic is the requestId
+        bytes32 reqId = entries[1].topics[1];
+        //assert
+        Raffle.RaffleState raffleState = raffle.getRaffleState();
+        assert((uint256(reqId)) > 0);
+        assert(uint256(raffleState) == 1);
+    }
+
+    /*///////////////////////////////////////////////
+                FULFILLRANDOMWORDS
+    ///////////////////////////////////////////////*/
+
+    function testFulfillrandomWordsCanOnlyBeCalledAfterPerformUpkeep(
+        uint256 requestId
+    ) public raffleEntered {
+        // Arrange / Act / Assert
+        vm.expectRevert(VRFCoordinatorV2_5Mock.InvalidRequest.selector);
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
+            requestId,
+            address(raffle)
+        );
     }
 }
