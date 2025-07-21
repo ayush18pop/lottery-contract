@@ -1,66 +1,108 @@
-## Foundry
+# Lottery Smart Contract (Chainlink VRF & Automation)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project implements a decentralized lottery using Solidity, Chainlink VRF v2.5 for randomness, and Chainlink Automation for upkeep. It is built and tested with Foundry.
 
-Foundry consists of:
+## Features
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- **Raffle Contract:** Users enter by paying an entrance fee. A winner is picked at intervals using Chainlink VRF.
+- **Chainlink VRF:** Provides provable randomness for winner selection.
+- **Chainlink Automation:** Triggers upkeep to request randomness and pick a winner.
+- **Configurable:** Supports local and Sepolia testnet deployments.
 
-## Documentation
+## Project Structure
 
-https://book.getfoundry.sh/
+- `src/Raffle.sol` — Main lottery contract
+- `script/DeployRaffle.s.sol` — Deployment script
+- `script/HelperConfig.s.sol` — Network configuration
+- `script/Interactions.s.sol` — Scripts for subscription, funding, and consumer management
+- `test/unit/RaffleTest.t.sol` — Unit tests
+- `MakeFile` — Build, test, and deploy automation
+- `.env` — Store sensitive variables (RPC URL, private key, Etherscan API key)
 
-## Usage
+## Setup
 
-### Build
+### 1. Install Dependencies
 
-```shell
-$ forge build
+```sh
+make install
 ```
 
-### Test
+### 2. Configure `.env`
 
-```shell
-$ forge test
+Add the following to your `.env` file:
+
+```
+SEPOLIA_RPC_URL=your_sepolia_rpc_url
+PRIVATE_KEY=your_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
-### Format
+### 3. Build & Test
 
-```shell
-$ forge fmt
+```sh
+make build
+make test
 ```
 
-### Gas Snapshots
+## Deployment & Chainlink Setup
 
-```shell
-$ forge snapshot
+### 1. Deploy Contract
+
+```sh
+make deploy ARGS="--network sepolia"
 ```
 
-### Anvil
+### 2. Create VRF Subscription
 
-```shell
-$ anvil
+```sh
+make createSubscription ARGS="--network sepolia"
 ```
 
-### Deploy
+### 3. Fund Subscription
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```sh
+make fundSubscription ARGS="--network sepolia"
 ```
 
-### Cast
+### 4. Add Consumer
 
-```shell
-$ cast <subcommand>
+```sh
+make addConsumer ARGS="--network sepolia"
 ```
 
-### Help
+### 5. Participate in Raffle
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+Call `enterRaffle` on the deployed contract using your wallet or a script.
+
+## Notes
+
+- Ensure your VRF subscription is funded and your contract is added as a consumer.
+- If VRF requests are pending, check LINK balance and callback gas limit.
+- Use Chainlink UI to monitor subscription status and fulfillments.
+
+## License
+
+MIT
+
+Configure .env
+
+Build & Test
+
+Deployment & Chainlink Setup
+Deploy Contract
+
+Create VRF Subscription
+
+Fund Subscription
+
+Add Consumer
+
+Participate in Raffle
+
+Call enterRaffle on the deployed contract.
+Notes
+Ensure your VRF subscription is funded and your contract is added as a consumer.
+If VRF requests are pending, check LINK balance and callback gas limit.
+Use Chainlink UI to monitor subscription status and fulfillments.
+License
+MIT
