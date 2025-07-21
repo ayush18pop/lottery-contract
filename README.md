@@ -81,28 +81,4 @@ Call `enterRaffle` on the deployed contract using your wallet or a script.
 - Use Chainlink UI to monitor subscription status and fulfillments.
 
 ## License
-
-MIT
-
-Configure .env
-
-Build & Test
-
-Deployment & Chainlink Setup
-Deploy Contract
-
-Create VRF Subscription
-
-Fund Subscription
-
-Add Consumer
-
-Participate in Raffle
-
-Call enterRaffle on the deployed contract.
-Notes
-Ensure your VRF subscription is funded and your contract is added as a consumer.
-If VRF requests are pending, check LINK balance and callback gas limit.
-Use Chainlink UI to monitor subscription status and fulfillments.
-License
 MIT
