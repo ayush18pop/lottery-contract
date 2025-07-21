@@ -63,14 +63,14 @@ contract FundSubscription is Script, CodeConstants {
         console.log("Funding from account: ", account);
 
         if (block.chainid == LOCAL_CHAIN_ID) {
-            vm.startBroadcast(account);
+            vm.startBroadcast();
             VRFCoordinatorV2_5Mock(vrfCoordinator).fundSubscription(
                 subscriptionId,
                 FUND_AMOUNT * 100
             );
             vm.stopBroadcast();
         } else {
-            vm.startBroadcast();
+            vm.startBroadcast(account);
             LinkToken(linkToken).transferAndCall(
                 vrfCoordinator,
                 FUND_AMOUNT,

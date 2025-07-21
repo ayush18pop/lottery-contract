@@ -9,7 +9,9 @@ import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VR
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 
-contract RaffleTest is Test {
+import {CodeConstants} from "script/HelperConfig.s.sol";
+
+contract RaffleTest is Test, CodeConstants {
     Raffle public raffle;
     HelperConfig public helperConfig;
 
@@ -36,7 +38,7 @@ contract RaffleTest is Test {
         vm.deal(PLAYER, STARTING_PLAYER_BALANCE);
     }
 
-    function testRaffleInitialization() external {
+    function testRaffleInitialization() external view {
         assert((raffle.getRaffleState()) == Raffle.RaffleState.OPEN);
     }
 
@@ -134,6 +136,12 @@ contract RaffleTest is Test {
         vm.roll(block.number + 1);
         _;
     }
+    modifier skipForks() {
+        if (block.chainid != LOCAL_CHAIN_ID) {
+            return;
+        }
+        _;
+    }
 
     function testPerformUpkeepRevertsIfCheckUpkeepIsFalse() public {
         // Arrange
@@ -163,23 +171,7 @@ contract RaffleTest is Test {
         raffle.performUpkeep("");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         // Find the log with the event signature for RandomWordsRequested
-        uint256 requestId;
-        for (uint256 i = 0; i < entries.length; i++) {
-            // The event signature for RandomWordsRequested is: keccak256("RandomWordsRequested(...)")
-            // But you can just check if topics[0] matches the expected event hash
-            if (
-                entries[i].topics.length > 1 &&
-                uint256(entries[i].topics[1]) != 0
-            ) {
-                requestId = uint256(entries[i].topics[1]);
-                break;
-            }
-        }
-        // Now use requestId for fulfillRandomWords
-        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
-            requestId,
-            address(raffle)
-        );
+        bytes32 requestId = entries[1].topics[1];
 
         //assert
         Raffle.RaffleState raffleState = raffle.getRaffleState();
@@ -193,7 +185,7 @@ contract RaffleTest is Test {
 
     function testFulfillrandomWordsCanOnlyBeCalledAfterPerformUpkeep(
         uint256 requestId
-    ) public raffleEntered {
+    ) public raffleEntered skipForks {
         // Arrange / Act / Assert
         vm.expectRevert(VRFCoordinatorV2_5Mock.InvalidRequest.selector);
         VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
@@ -202,52 +194,10 @@ contract RaffleTest is Test {
         );
     }
 
-    // function testFulfillRandomWordsPicksAWinnerResetsAndSendMoney()
-    //     public
-    //     raffleEntered
-    // {
-    //     uint256 startingIndex = 1;
-    //     address expectedWinner = address(1);
-    //     uint256 additionalEntrants = 3;
-    //     for (
-    //         uint256 i = startingIndex;
-    //         i < startingIndex + additionalEntrants;
-    //         i++
-    //     ) {
-    //         address newPlayer = address(uint160(i));
-    //         hoax(newPlayer, 1 ether);
-    //         raffle.enterRaffle{value: entranceFee}();
-    //     }
-
-    //     uint256 startingTimestamp = raffle.getLastTimeStamp();
-    //     uint256 winnerStartingBalance = expectedWinner.balance;
-    //     //act
-    //     vm.recordLogs();
-    //     raffle.performUpkeep("");
-    //     Vm.Log[] memory entries = vm.getRecordedLogs();
-    //     bytes32 requestId = entries[1].topics[1];
-
-    //     VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
-    //         uint256(requestId),
-    //         address(raffle)
-    //     );
-
-    //     //assert
-    //     address recentWinner = raffle.getRecentWinner();
-    //     Raffle.RaffleState raffleState = raffle.getRaffleState();
-    //     uint256 winnerBalance = recentWinner.balance;
-    //     uint256 endingTimeStamp = raffle.getLastTimeStamp();
-    //     uint256 prize = entranceFee * (additionalEntrants + 1);
-
-    //     assert(recentWinner == expectedWinner);
-    //     assert(uint256(raffleState) == 0);
-    //     assert(winnerBalance == winnerStartingBalance + prize);
-    //     assert(endingTimeStamp > startingTimestamp);
-    // }
-
     function testFulfillRandomWordsPicksAWinnerResetsAndSendMoney()
         public
         raffleEntered
+        skipForks
     {
         // Arrange
         uint256 additionalEntrance = 3; // 4 people total

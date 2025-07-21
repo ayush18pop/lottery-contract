@@ -55,9 +55,9 @@ contract HelperConfig is Script, CodeConstants {
                 vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B,
                 gasLane: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
                 callbackGasLimit: 500000,
-                subscriptionId: 0,
-                link: address(0),
-                account: 0xCF311Fe83b40d15A75119f1D8fc23EbA29B215F7
+                subscriptionId: 82555760631145719901210228515362656956286046457546950532926128756994073900,
+                link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
+                account: 0x7975E591c26e6c6D9B0CFd9A81f6d61A921C080c
             });
     }
 
