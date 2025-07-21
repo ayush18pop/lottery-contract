@@ -46,6 +46,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
         OPEN,
         CALCULATING
     }
+    bool private enableNativePayment = false;
+
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
@@ -100,20 +102,22 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     function checkUpkeep(
-        bytes calldata /*checkData */
+        bytes memory /* checkData */
     ) public view returns (bool upkeepNeeded, bytes memory /* performData */) {
         bool timeHasPassed = ((block.timestamp - s_lastTimeStamp) >=
             i_interval);
-        bool isOpen = RaffleState.OPEN == s_raffleState;
+        bool isOpen = s_raffleState == RaffleState.OPEN;
         bool hasBalance = address(this).balance > 0;
         bool hasPlayers = s_players.length > 0;
+
         upkeepNeeded = timeHasPassed && isOpen && hasBalance && hasPlayers;
-        return (upkeepNeeded, hex"");
+
+        return (upkeepNeeded, "");
     }
 
-    function performUpkeep(bytes calldata performData) external {
+    function performUpkeep(bytes calldata /* performData */) external {
         // Use performData (even if it's empty) as the argument
-        (bool upkeepNeeded, ) = checkUpkeep(performData);
+        (bool upkeepNeeded, ) = checkUpkeep("");
         if (!upkeepNeeded) {
             revert Raffle__UpkeepNotNeeded(
                 address(this).balance,
@@ -132,7 +136,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
                 callbackGasLimit: i_callbackGasLimit,
                 numWords: NUM_WORDS,
                 extraArgs: VRFV2PlusClient._argsToBytes(
-                    VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
+                    VRFV2PlusClient.ExtraArgsV1({
+                        nativePayment: enableNativePayment
+                    })
                 )
             });
         uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
@@ -170,5 +176,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function getSubscriptionId() public view returns (uint256) {
         return i_subscriptionId;
+    }
+
+    function getLastTimeStamp() external view returns (uint256) {
+        return s_lastTimeStamp;
+    }
+
+    function getRecentWinner() external view returns (address) {
+        return s_recentWinner;
     }
 }
